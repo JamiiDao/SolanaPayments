@@ -93,7 +93,6 @@ impl<'a> SolanaPayUrl<'a> {
         }
 
         let decoded = solana_pay_url.split(SOLANA_SCHEME).collect::<Vec<&str>>()[1];
-
         let first_split = if decoded.contains('?') {
             decoded.split('?').collect::<Vec<&str>>()
         } else {
@@ -297,14 +296,17 @@ impl<'a> SolanaPayUrl<'a> {
 
     /// Convert [Self] to a Solana Pay  URL
     pub fn to_url(&self) -> String {
-        String::from(SOLANA_SCHEME)
+        let outcome = String::from(SOLANA_SCHEME)
             + &self.recipient.to_base58()
+            + "?"
             + &self.prepare_amount()
             + &self.prepare_spl_token()
             + &self.prepare_references()
             + &self.prepare_label()
             + &self.prepare_message()
-            + &self.prepare_spl_memo()
+            + &self.prepare_spl_memo();
+
+        outcome.replace("?&", "?").replace("??", "?")
     }
 
     async fn resolve_decimals<F: Fn([u8; 32]) -> Fut, Fut: Future<Output = u8> + Send + 'static>(
@@ -446,7 +448,7 @@ mod url_parsing_checks {
 
         let decoded_zero_zero_one_usdc = smol::block_on(async {
             SolanaPayUrl::new()
-                .parse(&zero_zero_one_usdc, lookup_fn)
+                .parse(zero_zero_one_usdc, lookup_fn)
                 .await
                 .unwrap()
         });
@@ -471,7 +473,7 @@ mod url_parsing_checks {
 
         let decoded_prompt_amount = smol::block_on(async {
             SolanaPayUrl::new()
-                .parse(&prompt_amount, Utils::native_sol)
+                .parse(prompt_amount, Utils::native_sol)
                 .await
                 .unwrap()
         });
@@ -496,7 +498,7 @@ mod url_parsing_checks {
 
         let decoded_all_fields = smol::block_on(async {
             SolanaPayUrl::new()
-                .parse(&all_fields, lookup_fn)
+                .parse(all_fields, lookup_fn)
                 .await
                 .unwrap()
                 .add_reference("7owWEdgJRWpKsiDFNU4qT2kgMe2kitPXem5Yy8VdNatx")
